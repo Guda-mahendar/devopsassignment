@@ -1,0 +1,157 @@
+
+*****KUBERNETES****
+
+->1))We have a pod that has two containers, the pod is in unhealthy state. What should we do to learn
+more about the issue?
+Ans: Check the logs using kubectl logs and the -c flag, specifying each container.
+Explanation:
+-c flag: This flag allows you to specify the name of a particular container in the pod. This can be useful if you want to see the logs from only one container, or if the pod has multiple containers and you're not sure which one is causing the problem.
+
+->2))Write the kubectl command that returns this output.
+Ans: kubectl get pods --all-namespaces -o wide
+
+->3))Some of our team members are debating whether we should use a single AWS loadbalancer for all of
+our microservices or use a load balancer per microservice. Give you opinion and explain your
+approach.
+Ans: There will be pros and cons in both
+i) Single load balancer:
+Pros:
+Simpler setup and management.
+Lower cost.
+Cons:
+Potential performance bottlenecks for large deployments.
+Less flexibility for individual microservice scaling.
+Increased risk of a single point of failure.
+
+ii)Individual load balancer per microservice:
+Pros:
+Improved performance and scalability.
+Greater isolation and fault tolerance.
+Increased flexibility for individual service routing and configuration.
+Cons:
+More complex setup and management.
+Higher cost.
+->final analysis :
+Start with a single load balancer for initial development and testing. As your system grows, assess the need for individual load balancers based on performance requirements, scalability, and fault tolerance. Consider using automated tools for load balancer provisioning and management to streamline the process.
+
+****TERRAFORM*****
+
+->1))
+# Configure the AWS Provider
+provider "aws" {
+  region = "us-east-1"
+}
+
+# Create a VPC
+resource "aws_vpc" "main" {
+  cidr_block = "10.0.0.0/16"
+}
+
+# Create subnets in each region
+resource "aws_subnet" "us-east-1" {
+  vpc_id     = aws_vpc.main.id
+  cidr_block = "10.0.1.0/24"
+  availability_zone = "us-east-1a"
+}
+
+resource "aws_subnet" "us-east-2" {
+  vpc_id     = aws_vpc.main.id
+  cidr_block = "10.0.2.0/24"
+  availability_zone = "us-east-2a"
+}
+
+# Create a security group
+resource "aws_security_group" "allow_ssh" {
+  name   = "allow_ssh"
+  vpc_id = aws_vpc.main.id
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+# Launch an EC2 instance in each region
+resource "aws_instance" "us-east-1" {
+  ami           = "ami-08c40ec9d7f856448" # replace with a suitable AMI for your region
+  instance_type = "t2.small"
+  subnet_id     = aws_subnet.us-east-1.id
+  security_groups = [aws_security_group.allow_ssh.id]
+
+  # Configure user data for the instance
+  user_data = <<EOF
+#!/bin/bash
+echo "Hello from us-east-1!"
+EOF
+}
+
+resource "aws_instance" "us-east-2" {
+  ami           = "ami-08c40ec9d7f856448" # replace with a suitable AMI for your region
+  instance_type = "t2.small"
+  subnet_id     = aws_subnet.us-east-2.id
+  security_groups = [aws_security_group.allow_ssh.id]
+
+  # Configure user data for the instance
+  user_data = <<EOF
+#!/bin/bash
+echo "Hello from us-east-2!"
+EOF
+}
+
+->2))To fix it, you need to consolidate these into a single provider block and use aliases to distinguish between different regions.
+
+correct terraform code:
+
+provider "aws" {
+  alias = "eu-west-1"
+  region = "eu-west-1"
+}
+
+provider "aws" {
+  alias = "eu-central-1"
+  region = "eu-central-1"
+}
+
+provider "aws" {
+  alias = "eu-east-1"
+  region = "eu-east-1"
+}
+
+# Now you can use the aliases in your resources
+resource "aws_s3_bucket" "eu_west_bucket" {
+  bucket = "my-bucket"
+  provider = aws.eu-west-1
+}
+
+resource "aws_s3_bucket" "eu_central_bucket" {
+  bucket = "my-other-bucket"
+  provider = aws.eu-central-1
+}
+
+resource "aws_s3_bucket" "eu_east_bucket" {
+  bucket = "my-third-bucket"
+  provider = aws.eu-east-1
+}
+
+***AWS****
+
+->1))
+(c) Point application to reader endpoint of the Amazon Aurora.
+
+--2))
+(a) Server-side encryption with customer-provided encryption keys (SSE-C)
+
+--3))
+(b) Free Tier Only.
+
+--4))
+(c) Use Amazon Elastic File System (EFS) with lifecycle policy. 
